@@ -1,7 +1,7 @@
 # math_lib/calculator.py - Version 2
 
-def add(a, b, c=0):
-    return a + b + c
+def add(a, b, c=0, d=0):
+    return (a + b + c + d)
 
 def multiply(a, b,  c=1):
     return a * b * c
@@ -16,3 +16,5 @@ def power(a, b):
 
 def subtract(a, b):
     return a - b
+def divide_by_two(a):
+    return a / 2
