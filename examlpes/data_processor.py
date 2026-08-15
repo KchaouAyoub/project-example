@@ -42,3 +42,6 @@ class DataAnalyzer:
         mean = self.get_mean()
         variance = sum((x - mean) ** 2 for x in self.data) / len(self.data)
         return variance ** 0.5
+def multiply_by_two(data: list) -> list:
+    """Multiplie chaque élément par 2"""
+    return [x * 2 for x in data]    

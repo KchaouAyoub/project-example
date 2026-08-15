@@ -37,3 +37,6 @@ async def fetch_strings(urls: list) -> list:
     """Récupère des chaînes depuis une API de manière asynchrone"""
     await asyncio.sleep(1)
     return [f"Data from {url}" for url in urls]
+def to_uppercase(text: str) -> str:
+    """Convertit une chaîne en majuscules"""
+    return text.upper()
