@@ -13,8 +13,3 @@ def divide(a, b, precision=2):
 
 def power(a, b):
     return a ** b
-
-def subtract(a, b):
-    return a - b
-def divide_by_two(a):
-    return a / 2

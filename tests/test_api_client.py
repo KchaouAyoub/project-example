@@ -1,7 +1,3 @@
-"""
-tests/test_api_client.py - Tests pour api_client
-"""
-
 from api_client import APIClient
 
 def test_api_client_init():

@@ -2,11 +2,12 @@
 data_processor.py - Traitement de données
 """
 
-def clean_data(data: list) -> list:
-    """Nettoie une liste en supprimant les valeurs nulles"""
-    return [x for x in data if x is not None]
-
-def normalize_data(data: list) -> list:
+def clean_data(data: list, remove_empty: bool = True) -> list:
+    result = [x for x in data if x is not None]
+    if remove_empty:
+        result = [x for x in result if x != ""]
+    return result 
+def normalize_data(data: list, id: str) -> list:
     """Normalise les données entre 0 et 1"""
     if not data:
         return []
