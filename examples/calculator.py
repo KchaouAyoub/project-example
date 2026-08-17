@@ -18,3 +18,5 @@ def subtract(a, b):
     return a - b
 def divide_by_two(a):
     return a / 2
+def test_branch_function(x: float) -> float:
+    return x * 10
