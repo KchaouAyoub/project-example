@@ -7,7 +7,7 @@ def clean_data(data: list, remove_empty: bool = True) -> list:
     if remove_empty:
         result = [x for x in result if x != ""]
     return result 
-def normalize_data(data: list, id: str) -> list:
+def normalize_data(data: list) -> list:
     """Normalise les données entre 0 et 1"""
     if not data:
         return []

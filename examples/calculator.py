@@ -1,9 +1,9 @@
 # math_lib/calculator.py - Version 2
 
-def add(a: int, b: int, c: int = 0,d:int) -> int: 
-    return a + b + c+ d
+def add(a: int, b: int, c: int = 0) -> int: 
+    return a + b + c
 
-def multiply(a, b,  c=1):
+def multiply(a: float, b: float, c: float = 1) -> float:
     return a * b * c
 
 def divide(a, b, precision=2):
