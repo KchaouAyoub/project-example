@@ -26,4 +26,6 @@ class APIClient:
     
     
     
-    
+    def get_history(self) -> list:
+        """Retourne l'historique des requêtes"""
+        return self.history
