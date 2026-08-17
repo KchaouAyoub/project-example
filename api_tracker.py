@@ -4,6 +4,7 @@ import ast
 import argparse
 import subprocess
 from typing import List, Dict, Any, Set, Optional
+from datetime import datetime
 
 # -- EXTRACTION DES FONCTIONS (AST) --
 
@@ -257,9 +258,13 @@ def find_test_dirs(repo: str) -> List[str]:
 
 # -- DÉTECTION DES CHANGEMENTS --
 
-def detect_changes(repo: str, old_ref: str, new_ref: str) -> Dict:
+def detect_changes(repo: str, old_ref: str, new_ref: str, verbose: bool = False) -> Dict:
     """Détecte les changements d'API dans tout le repository."""
     changes = {'added': [], 'removed': [], 'modified': []}
+
+    if verbose:
+        print(f"🔍 Analyse du repository : {repo}")
+        print(f"🔀 Comparaison : {old_ref} → {new_ref}")
 
     if not is_git_repo(repo):
         raise ValueError(f"{repo} n'est pas un repo Git")
@@ -268,13 +273,22 @@ def detect_changes(repo: str, old_ref: str, new_ref: str) -> Dict:
     if old_ref == new_ref:
         old_files = set(list_py_at_ref(repo, old_ref))
         new_files = set(list_py_local(repo))
+        if verbose:
+            print(f"📁 {len(old_files)} fichiers dans HEAD")
+            print(f"📁 {len(new_files)} fichiers dans le working tree")
     else:
         old_files = set(list_py_at_ref(repo, old_ref))
         new_files = set(list_py_at_ref(repo, new_ref))
+        if verbose:
+            print(f"📁 {len(old_files)} fichiers dans {old_ref}")
+            print(f"📁 {len(new_files)} fichiers dans {new_ref}")
 
     all_files = sorted(old_files | new_files)
 
     for path in all_files:
+        if verbose:
+            print(f"   📄 Analyse de {path}...")
+
         # Lire les sources
         old_src = read_from_git(repo, path, old_ref) if path in old_files else ''
         new_src = read_local(repo, path) if path in new_files and old_ref == new_ref else ''
@@ -289,6 +303,9 @@ def detect_changes(repo: str, old_ref: str, new_ref: str) -> Dict:
         changes['added'].extend(file_changes['added'])
         changes['removed'].extend(file_changes['removed'])
         changes['modified'].extend(file_changes['modified'])
+
+    if verbose:
+        print(f"\n📊 Résumé : {len(changes['added'])} ajoutées, {len(changes['removed'])} supprimées, {len(changes['modified'])} modifiées")
 
     return changes
 
@@ -349,7 +366,7 @@ def print_report(changes: Dict, impacted: List[str] = None):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="API Change Tracker - Détecte les changements d'API",
+        description="📊 API Change Tracker - Détecte les changements d'API",
         epilog="Ex: python api_tracker.py . --old-ref HEAD~1 --new-ref HEAD"
     )
     parser.add_argument('path', nargs='?', default=os.getcwd(),
@@ -362,38 +379,251 @@ def main():
                         help="Pattern d'inclusion")
     parser.add_argument('--exclude', default='',
                         help="Pattern d'exclusion")
+    parser.add_argument('--verbose', '-v', action='store_true',
+                        help="Mode détaillé")
+    parser.add_argument('--output', '-o',
+                        help="Génère un rapport HTML (ex: report.html)")
+    parser.add_argument('--json', '-j',
+                        help="Exporte les résultats en JSON (ex: report.json)")
 
     args = parser.parse_args()
 
-    print(f"\nRepository: {args.path}")
-    print(f"Comparaison: {args.old_ref} -> {args.new_ref}")
+    if args.verbose:
+        print(f"🔍 Mode verbose activé")
+        print(f"📂 Repository: {args.path}")
+        print(f"🔀 Comparaison: {args.old_ref} → {args.new_ref}")
 
     try:
-        changes = detect_changes(args.path, args.old_ref, args.new_ref)
+        changes = detect_changes(args.path, args.old_ref, args.new_ref, args.verbose)
 
-        # Tests impactés
+        # Trouver les tests impactés
         changed_funcs = (
             [f['name'] for f in changes['modified']] +
             [f['name'] for f in changes['added']] +
             [f['name'] for f in changes['removed']]
         )
-        impacted = []
+        impacted_tests = []
         if changed_funcs:
             for d in find_test_dirs(args.path):
                 for root, _, files in os.walk(d):
                     for f in files:
                         if f.endswith('.py'):
-                            impacted.extend(find_impacted_tests(
+                            impacted_tests.extend(find_impacted_tests(
                                 os.path.join(root, f), changed_funcs
                             ))
-            impacted = sorted(set(impacted))
+            impacted_tests = sorted(set(impacted_tests))
 
-        print_report(changes, impacted)
+        # Afficher le rapport console
+        print_report(changes, impacted_tests)
+
+        # 👇 NOUVEAU : Générer les rapports si demandés 👇
+        if args.output:
+            generate_html_report(changes, impacted_tests, args.output)
+
+        if args.json:
+            export_json(changes, impacted_tests, args.json)
 
     except ValueError as e:
-        print(f"\nErreur: {e}")
+        print(f"❌ Erreur: {e}")
         sys.exit(1)
+def generate_html_report(changes: Dict, impacted_tests: List[str], output_path: str = "report.html"):
+    """Génère un rapport HTML professionnel."""
+    
+    html = f"""
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Change Report</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            padding: 40px;
+        }}
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }}
+        h1 {{
+            color: #1a1a2e;
+            border-bottom: 4px solid #007bff;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }}
+        .meta {{
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            font-size: 14px;
+            color: #495057;
+        }}
+        .summary {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }}
+        .card {{
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }}
+        .card-added {{ background: #d4edda; color: #155724; border-left: 5px solid #28a745; }}
+        .card-removed {{ background: #f8d7da; color: #721c24; border-left: 5px solid #dc3545; }}
+        .card-modified {{ background: #fff3cd; color: #856404; border-left: 5px solid #ffc107; }}
+        .card-total {{ background: #cce5ff; color: #004085; border-left: 5px solid #17a2b8; }}
+        .section {{
+            margin-bottom: 30px;
+        }}
+        .section h2 {{
+            color: #1a1a2e;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }}
+        .function-item {{
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            border-left: 4px solid #007bff;
+        }}
+        .function-item.added {{ border-left-color: #28a745; }}
+        .function-item.removed {{ border-left-color: #dc3545; }}
+        .function-item.modified {{ border-left-color: #ffc107; }}
+        .test-item {{
+            background: #f8f9fa;
+            padding: 8px 15px;
+            border-radius: 6px;
+            margin: 4px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }}
+        .footer {{
+            margin-top: 40px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+            border-top: 1px solid #e9ecef;
+            padding-top: 20px;
+        }}
+        .badge {{
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: white;
+            margin-left: 10px;
+        }}
+        .badge-added {{ background: #28a745; }}
+        .badge-removed {{ background: #dc3545; }}
+        .badge-modified {{ background: #ffc107; color: #333; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 API Change Report</h1>
+        
+        <div class="meta">
+            <strong>Repository:</strong> {os.getcwd()}<br>
+            <strong>Date:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+        </div>
+        
+        <div class="summary">
+            <div class="card card-added">✅ Added: {len(changes.get('added', []))}</div>
+            <div class="card card-removed">❌ Removed: {len(changes.get('removed', []))}</div>
+            <div class="card card-modified">⚠️ Modified: {len(changes.get('modified', []))}</div>
+            <div class="card card-total">📈 Total: {len(changes.get('added', [])) + len(changes.get('removed', [])) + len(changes.get('modified', []))}</div>
+        </div>
+"""
 
+    if changes.get('added'):
+        html += """
+        <div class="section">
+            <h2>🟢 Functions Added</h2>
+"""
+        for f in changes['added']:
+            html += f"""
+            <div class="function-item added">✅ {f.get('file', '')} :: {f['name']}({', '.join(f.get('params', []))})</div>
+"""
+        html += "</div>"
+
+    if changes.get('removed'):
+        html += """
+        <div class="section">
+            <h2>🔴 Functions Removed</h2>
+"""
+        for f in changes['removed']:
+            html += f"""
+            <div class="function-item removed">❌ {f.get('file', '')} :: {f['name']}({', '.join(f.get('params', []))})</div>
+"""
+        html += "</div>"
+
+    if changes.get('modified'):
+        html += """
+        <div class="section">
+            <h2>🟡 Functions Modified</h2>
+"""
+        for f in changes['modified']:
+            old = ', '.join(f.get('old_params', []))
+            new = ', '.join(f.get('new_params', []))
+            html += f"""
+            <div class="function-item modified">⚠️ {f.get('file', '')} :: {f['name']}: ({old}) → ({new})</div>
+"""
+        html += "</div>"
+
+    if impacted_tests:
+        html += """
+        <div class="section">
+            <h2>🧪 Impacted Tests ({len(impacted_tests)})</h2>
+"""
+        for test in impacted_tests:
+            html += f"""
+            <div class="test-item">🧪 {test}()</div>
+"""
+        html += "</div>"
+
+    html += """
+        <div class="footer">
+            Generated by <strong>API Change Tracker</strong> v1.0
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html)
+    print(f"✅ Rapport HTML généré : {output_path}")
+def export_json(changes: Dict, impacted_tests: List[str], output_path: str = "report.json"):
+    """Exporte les résultats en JSON."""
+    import json
+    data = {
+        "timestamp": datetime.now().isoformat(),
+        "summary": {
+            "added": len(changes.get('added', [])),
+            "removed": len(changes.get('removed', [])),
+            "modified": len(changes.get('modified', [])),
+            "total": len(changes.get('added', [])) + len(changes.get('removed', [])) + len(changes.get('modified', []))
+        },
+        "changes": changes,
+        "impacted_tests": impacted_tests
+    }
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    print(f"✅ Rapport JSON généré : {output_path}")
 
 if __name__ == "__main__":
     main()
