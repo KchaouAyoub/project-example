@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Change Tracker</title>
+    <style>
+        :root {
+            --ink: #172033;
+            --muted: #64748b;
+            --line: #d8e0ea;
+            --surface: #ffffff;
+            --panel: #f7f9fc;
+            --primary: #1769e0;
+            --primary-dark: #0f4fae;
+            --accent: #6d42c7;
+            --success: #198754;
+            --danger: #c24156;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+            color: var(--ink);
+            background: linear-gradient(135deg, #edf3fb 0%, #f8fafc 52%, #eef2f7 100%);
+            padding: 32px 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1120px;
+            margin: 0 auto;
+            background: var(--surface);
+            padding: 34px;
+            border: 1px solid rgba(216, 224, 234, 0.9);
+            border-radius: 18px;
+            box-shadow: 0 18px 45px rgba(23, 32, 51, 0.1);
+        }
+        h1 {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 18px;
+            margin-bottom: 30px;
+            font-size: clamp(1.8rem, 4vw, 2.7rem);
+            letter-spacing: -0.03em;
+        }
+        .section {
+            background: var(--panel);
+            padding: 24px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            margin-bottom: 22px;
+        }
+        .section h2 {
+            color: var(--ink);
+            margin-bottom: 18px;
+            font-size: 1.25rem;
+        }
+        .row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .col {
+            flex: 1;
+            min-width: 200px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--muted);
+        }
+        select,
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            font-size: 15px;
+            color: var(--ink);
+            background: var(--surface);
+            min-height: 46px;
+        }
+        select:focus,
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(23, 105, 224, 0.12);
+            outline: none;
+        }
+        .browse-group {
+            display: flex;
+            gap: 10px;
+        }
+        .browse-group input[type="text"] {
+            flex: 1 1 0;
+            min-width: 0;
+            color: #212529;
+            caret-color: #007bff;
+        }
+        .btn-browse {
+            padding: 10px 20px;
+            background: #526174;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            margin-top: 0;
+        }
+        .btn-browse:hover {
+            background: #3e4c5d;
+        }
+        .btn-update {
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            margin-top: 0;
+        }
+        .btn-update:hover {
+            background: #218838;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+        .browse-group .btn-browse {
+            width: auto;
+            flex: 1 1 0;
+            margin-top: 0;
+        }
+        button:hover:not(:disabled) {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .btn-success {
+            background: var(--success);
+        }
+        .btn-success:hover:not(:disabled) {
+            background: #218838;
+        }
+        .btn-snapshot {
+            background: var(--accent);
+        }
+        .btn-snapshot:hover:not(:disabled) {
+            background: #5a32a3;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-group button {
+            flex: 1;
+            margin-top: 10px;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .card {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        .card-added {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+        .card-removed {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+        .card-modified {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+        .card-total {
+            background: #cce5ff;
+            color: #004085;
+            border-left: 4px solid #17a2b8;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            display: none;
+        }
+        .info {
+            background: #eef2f7;
+            padding: 13px 15px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            margin-left: 8px;
+        }
+        .badge-git {
+            background: #28a745;
+        }
+        .badge-no-git {
+            background: #dc3545;
+        }
+        .hidden {
+            display: none;
+        }
+        .details ul {
+            list-style: none;
+            padding: 0;
+        }
+        .details ul li {
+            padding: 6px 12px;
+            border-radius: 4px;
+            margin: 4px 0;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .details ul li.added {
+            background: #d4edda;
+            border-left: 3px solid #28a745;
+        }
+        .details ul li.modified {
+            background: #fff3cd;
+            border-left: 3px solid #ffc107;
+        }
+        .details ul li.removed {
+            background: #f8d7da;
+            border-left: 3px solid #dc3545;
+        }
+        .details ul li.test {
+            background: #cce5ff;
+            border-left: 3px solid #17a2b8;
+        }
+        .details h3 {
+            margin-top: 15px;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+        .report-frame {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            margin-top: 15px;
+            background: white;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.2rem;
+            color: #007bff;
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .row {
+                flex-direction: column;
+            }
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>API Change Tracker</h1>
+
+        <!-- Sélection du projet -->
+        <div class="section">
+            <h2>Sélection du projet</h2>
+            <div class="row">
+                <div class="col">
+                    <label>Sélectionner un dossier :</label>
+                    <div class="browse-group">
+                        <input type="text" id="projectPath" placeholder="C:\Users\kchaw\summer-internship\...">
+                        <input type="file" id="folderInput" webkitdirectory directory style="display:none">
+                        <button class="btn-browse" onclick="browseFolder()">Parcourir</button>
+                    </div>
+                </div>
+            </div>
+            <div id="projectInfo" class="info">Aucun projet sélectionné</div>
+        </div>
+
+        <!-- Comparaison -->
+        <div class="section">
+            <h2>Comparaison des versions</h2>
+            <div class="row">
+                <div class="col">
+                    <label>Ancienne version</label>
+                    <select id="oldRef">
+                        <option value="HEAD">HEAD (dernier commit)</option>
+                        <option value="HEAD~1">HEAD~1 (précédent)</option>
+                        <option value="HEAD~2">HEAD~2</option>
+                    </select>
+                </div>
+                <div class="col">
+                    <label>Nouvelle version</label>
+                    <select id="newRef">
+                        <option value="HEAD">HEAD (dernier commit)</option>
+                        <option value="HEAD~1">HEAD~1 (précédent)</option>
+                        <option value="HEAD~2">HEAD~2</option>
+                    </select>
+                </div>
+            </div>
+            <div id="errorMessage" class="error"></div>
+
+            <div class="btn-group">
+                <button id="analyzeBtn" onclick="runAnalysis()">Lancer l'analyse (Git)</button>
+                <button id="analyzeNoGitBtn" class="btn-snapshot" onclick="runAnalysisNoGit()">Analyser sans Git</button>
+            </div>
+            <button id="saveSnapshotBtn" class="btn-snapshot" onclick="saveSnapshot()">Sauvegarder l'état de référence (Snapshot)</button>
+        </div>
+
+        <!-- Résultats -->
+        <div id="resultsSection" class="section hidden">
+            <h2>Résultats de l'analyse</h2>
+            <div id="loadingIndicator" class="loading">Analyse en cours...</div>
+            <div id="summaryContainer" class="summary"></div>
+            <div id="detailsContainer" class="details"></div>
+            <button id="reportBtn" class="btn-success hidden" onclick="generateReport()">Générer le rapport HTML</button>
+            <div id="reportContainer" class="hidden">
+                <h3 style="margin-top:15px;">Aperçu du rapport</h3>
+                <iframe id="reportFrame" class="report-frame"></iframe>
+                <button onclick="downloadReport()" style="background:#17a2b8;">Télécharger le rapport HTML</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let currentResult = null;
+        let currentHtml = null;
+        let currentPath = '';
+
+        function clearProjectSelection() {
+            currentPath = '';
+            localStorage.removeItem('api_tracker_last_path');
+            document.getElementById('projectPath').value = '';
+            document.getElementById('projectInfo').innerHTML = 'Aucun projet sélectionné';
+        }
+
+        // ============================================================
+        // CORRECTION DE CHEMIN
+        // ============================================================
+
+        function fixPath(path) {
+    if (!path) return path;
+    // Nettoyer le chemin
+    path = path.trim().replace(/["']/g, '');
+    // Ne pas modifier le chemin - l'utilisateur peut choisir n'importe quel dossier
+    return path;
+}
+
+        // ============================================================
+        // VÉRIFICATION GIT
+        // ============================================================
+
+        async function checkGitRepo(path) {
+    if (!path) return;
+    // Garder le chemin exact
+    currentPath = path;
+
+    document.getElementById('projectPath').value = path;
+
+    const info = document.getElementById('projectInfo');
+    try {
+        // Vérifier d'abord si le dossier existe
+        const existRes = await axios.get(`${API_URL}/check-path?path=${encodeURIComponent(path)}`);
+        if (!existRes.data.exists) {
+            info.innerHTML = `<strong>${path}</strong> <span class="badge badge-no-git">Dossier introuvable</span>`;
+            return;
+        }
+        
+        const res = await axios.get(`${API_URL}/check-git?repo_path=${encodeURIComponent(path)}`);
+        if (res.data.is_git) {
+            info.innerHTML = `<strong>${path}</strong> <span class="badge badge-git">Repository Git</span>`;
+        } else {
+            info.innerHTML = `<strong>${path}</strong> <span class="badge badge-no-git">Pas un repository Git</span>`;
+        }
+    } catch (e) {
+        info.innerHTML = `<strong>${path}</strong> <span class="badge badge-no-git">Erreur de vérification</span>`;
+    }
+}
+        async function browseFolder() {
+            try {
+                const res = await axios.get(`${API_URL}/select-folder`);
+                if (res.data.selected && res.data.path) {
+                    document.getElementById('projectPath').value = res.data.path;
+                    await checkGitRepo(res.data.path);
+                } else if (res.data.error) {
+                    showError(`Impossible d'ouvrir le sélecteur : ${res.data.error}`);
+                }
+            } catch (e) {
+                showError('Impossible de contacter le backend pour sélectionner le dossier.');
+            }
+        }
+
+        // ============================================================
+        // ÉVÉNEMENTS
+        // ============================================================
+
+        document.getElementById('projectPath').addEventListener('change', function() {
+            if (this.value.trim()) {
+                checkGitRepo(this.value.trim());
+            } else {
+                clearProjectSelection();
+            }
+        });
+
+        document.getElementById('folderInput').addEventListener('change', function(e) {
+    const files = e.target.files;
+    if (files.length > 0) {
+        let path = '';
+        const firstFile = files[0];
+
+        if (firstFile.path) {
+            path = firstFile.path.replace(/\\[^\\]*$/, '');
+        } else if (firstFile.webkitRelativePath) {
+            const parts = firstFile.webkitRelativePath.split('/');
+            if (parts.length > 0) {
+                // Construire le chemin à partir du nom du dossier
+                const folderName = parts[0];
+                // Demander à l'utilisateur le chemin complet
+                const userPath = prompt(
+                    `Dossier sélectionné : "${folderName}"\n` +
+                    `Veuillez confirmer le chemin complet :`,
+                    `C:\\Users\\kchaw\\${folderName}`
+                );
+                if (userPath) {
+                    path = userPath;
+                }
+            }
+        }
+
+        if (path) {
+            document.getElementById('projectPath').value = path;
+            checkGitRepo(path);
+        } else {
+            alert('Impossible de récupérer le chemin. Veuillez le saisir manuellement.');
+        }
+    }
+    this.value = '';
+});
+
+        // ============================================================
+        // SAUVEGARDE SNAPSHOT
+        // ============================================================
+
+        async function saveSnapshot() {
+            const path = currentPath || document.getElementById('projectPath').value;
+            if (!path) {
+                alert('Veuillez sélectionner un dossier.');
+                return;
+            }
+
+            const btn = document.getElementById('saveSnapshotBtn');
+            btn.disabled = true;
+            btn.textContent = 'Sauvegarde en cours...';
+
+            try {
+                const res = await axios.post(`${API_URL}/save-snapshot`, { repo_path: path });
+                if (res.data.success) {
+                    alert(res.data.message);
+                } else {
+                    alert('Erreur : ' + (res.data.error || 'Inconnue'));
+                }
+            } catch (e) {
+                alert('Erreur lors de la sauvegarde du snapshot.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Sauvegarder l\'état de référence (Snapshot)';
+            }
+        }
+
+        // ============================================================
+        // ANALYSE AVEC GIT
+        // ============================================================
+
+        async function runAnalysis() {
+            const path = currentPath || document.getElementById('projectPath').value;
+            if (!path) {
+                showError('Veuillez sélectionner un projet.');
+                return;
+            }
+
+            const oldRef = document.getElementById('oldRef').value;
+            const newRef = document.getElementById('newRef').value;
+
+            document.getElementById('resultsSection').classList.remove('hidden');
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('summaryContainer').innerHTML = '';
+            document.getElementById('detailsContainer').innerHTML = '';
+            document.getElementById('reportBtn').classList.add('hidden');
+            document.getElementById('reportContainer').classList.add('hidden');
+            document.getElementById('analyzeBtn').disabled = true;
+            hideError();
+
+            try {
+                const res = await axios.post(`${API_URL}/analyze`, {
+                    repo_path: path,
+                    old_ref: oldRef,
+                    new_ref: newRef
+                });
+                currentResult = res.data;
+                displayResults(currentResult);
+            } catch (e) {
+                showError('Erreur lors de l\'analyse. Vérifiez que le backend est lancé.');
+            } finally {
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('analyzeBtn').disabled = false;
+            }
+        }
+
+        // ============================================================
+        // ANALYSE SANS GIT
+        // ============================================================
+
+        async function runAnalysisNoGit() {
+            const path = currentPath || document.getElementById('projectPath').value;
+            if (!path) {
+                showError('Veuillez sélectionner un projet.');
+                return;
+            }
+
+            document.getElementById('resultsSection').classList.remove('hidden');
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('summaryContainer').innerHTML = '';
+            document.getElementById('detailsContainer').innerHTML = '';
+            document.getElementById('reportBtn').classList.add('hidden');
+            document.getElementById('reportContainer').classList.add('hidden');
+            document.getElementById('analyzeNoGitBtn').disabled = true;
+            hideError();
+
+            try {
+                const res = await axios.post(`${API_URL}/analyze-no-git`, { repo_path: path });
+                if (res.data.error) {
+                    showError(res.data.error);
+                    return;
+                }
+                currentResult = res.data;
+                displayResults(currentResult);
+            } catch (e) {
+                showError('Erreur lors de l\'analyse sans Git.');
+            } finally {
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('analyzeNoGitBtn').disabled = false;
+            }
+        }
+
+        // ============================================================
+        // AFFICHAGE DES RÉSULTATS
+        // ============================================================
+
+        function displayResults(data) {
+            const summary = document.getElementById('summaryContainer');
+            summary.innerHTML = `
+                <div class="card card-added">${data.added || 0}<br><small>Ajoutées</small></div>
+                <div class="card card-removed">${data.removed || 0}<br><small>Supprimées</small></div>
+                <div class="card card-modified">${data.modified || 0}<br><small>Modifiées</small></div>
+                <div class="card card-total">${data.total || 0}<br><small>Total</small></div>
+            `;
+
+            const details = document.getElementById('detailsContainer');
+            let html = '';
+            const changes = data.details?.changes || {};
+
+            // Ajoutées
+            if (changes.added && changes.added.length > 0) {
+                html += `<h3 style="color:#28a745;">Fonctions ajoutées (${changes.added.length})</h3><ul>`;
+                changes.added.forEach(f => {
+                    const params = (f.params || []).join(', ');
+                    const asyncTag = f.is_async ? 'async ' : '';
+                    const returnTag = f.return_type && f.return_type !== 'Any' ? ` → ${f.return_type}` : '';
+                    html += `<li class="added">${f.file || ''} :: ${asyncTag}${f.name}(${params})${returnTag}</li>`;
+                });
+                html += `</ul>`;
+            }
+
+            // Supprimées
+            if (changes.removed && changes.removed.length > 0) {
+                html += `<h3 style="color:#dc3545;">Fonctions supprimées (${changes.removed.length})</h3><ul>`;
+                changes.removed.forEach(f => {
+                    const params = (f.params || []).join(', ');
+                    const asyncTag = f.is_async ? 'async ' : '';
+                    const returnTag = f.return_type && f.return_type !== 'Any' ? ` → ${f.return_type}` : '';
+                    html += `<li class="removed">${f.file || ''} :: ${asyncTag}${f.name}(${params})${returnTag}</li>`;
+                });
+                html += `</ul>`;
+            }
+
+            // Modifiées
+            if (changes.modified && changes.modified.length > 0) {
+                html += `<h3 style="color:#ffc107;">Fonctions modifiées (${changes.modified.length})</h3><ul>`;
+                changes.modified.forEach(f => {
+                    const old_params = (f.old_params || []).join(', ');
+                    const new_params = (f.new_params || []).join(', ');
+
+                    html += `<li class="modified" style="margin-bottom:10px;">`;
+                    html += `<strong>${f.file || ''} :: ${f.name}</strong>`;
+
+                    if (old_params !== new_params) {
+                        html += `<br>  Paramètres : (${old_params}) → (${new_params})`;
+                    }
+                    if (f.param_types_changed) {
+                        html += `<br>  Types : (${(f.old_param_types || []).join(', ')}) → (${(f.new_param_types || []).join(', ')})`;
+                    }
+                    if (f.params_added && f.params_added.length > 0) {
+                        html += `<br>  Ajoutés : ${f.params_added.join(', ')}`;
+                    }
+                    if (f.params_removed && f.params_removed.length > 0) {
+                        html += `<br>  Supprimés : ${f.params_removed.join(', ')}`;
+                    }
+                    if (f.old_return !== f.new_return) {
+                        html += `<br>  Type de retour : ${f.old_return} → ${f.new_return}`;
+                    }
+                    if (f.old_async !== f.new_async) {
+                        const old_a = f.old_async ? 'async' : 'sync';
+                        const new_a = f.new_async ? 'async' : 'sync';
+                        html += `<br>  Async : ${old_a} → ${new_a}`;
+                    }
+                    if (f.body_changed) {
+                        html += '<br>  Corps de la fonction modifié';
+                    }
+
+                    html += `</li>`;
+                });
+                html += `</ul>`;
+            }
+
+            if (!html) {
+                html = '<p style="color:#6c757d;">Aucun changement détecté.</p>';
+            }
+
+            details.innerHTML = html;
+
+            const impactedTests = data.details?.impacted_tests || [];
+            if (impactedTests.length > 0) {
+                details.innerHTML += `<h3 style="color:#17a2b8;">Tests impactés (${impactedTests.length})</h3><ul>`;
+                impactedTests.forEach(test => {
+                    details.innerHTML += `<li class="test">${test}()</li>`;
+                });
+                details.innerHTML += '</ul>';
+            }
+
+            document.getElementById('reportBtn').classList.remove('hidden');
+        }
+
+        // ============================================================
+        // RAPPORT HTML
+        // ============================================================
+
+        async function generateReport() {
+            const path = currentPath || document.getElementById('projectPath').value;
+            if (!path) {
+                showError('Veuillez sélectionner un projet.');
+                return;
+            }
+
+            const oldRef = document.getElementById('oldRef').value;
+            const newRef = document.getElementById('newRef').value;
+            document.getElementById('reportBtn').disabled = true;
+
+            try {
+                const res = await axios.post(`${API_URL}/generate-report`, {
+                    repo_path: path,
+                    old_ref: oldRef,
+                    new_ref: newRef
+                });
+                if (res.data.success) {
+                    currentHtml = res.data.html;
+                    document.getElementById('reportContainer').classList.remove('hidden');
+                    document.getElementById('reportFrame').srcdoc = currentHtml;
+                } else {
+                    showError(res.data.error || 'Erreur lors de la génération du rapport.');
+                }
+            } catch (e) {
+                showError('Erreur lors de la génération du rapport.');
+            } finally {
+                document.getElementById('reportBtn').disabled = false;
+            }
+        }
+
+        function downloadReport() {
+            if (!currentHtml) return;
+            const blob = new Blob([currentHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'rapport_api.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // ============================================================
+        // UTILITAIRES
+        // ============================================================
+
+        function showError(msg) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 8000);
+        }
+
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+    </script>
+
+</body>
+</html>
