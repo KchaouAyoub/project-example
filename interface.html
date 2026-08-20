@@ -386,9 +386,7 @@
             document.getElementById('projectInfo').innerHTML = 'Aucun projet sélectionné';
         }
 
-        // ============================================================
-        // CORRECTION DE CHEMIN
-        // ============================================================
+        // Correction de chemin
 
         function fixPath(path) {
     if (!path) return path;
@@ -398,9 +396,7 @@
     return path;
 }
 
-        // ============================================================
-        // VÉRIFICATION GIT
-        // ============================================================
+        // Vérification Git
 
         async function checkGitRepo(path) {
     if (!path) return;
@@ -442,9 +438,7 @@
             }
         }
 
-        // ============================================================
-        // ÉVÉNEMENTS
-        // ============================================================
+        // Événements
 
         document.getElementById('projectPath').addEventListener('change', function() {
             if (this.value.trim()) {
@@ -489,9 +483,7 @@
     this.value = '';
 });
 
-        // ============================================================
-        // SAUVEGARDE SNAPSHOT
-        // ============================================================
+        // Sauvegarde snapshot
 
         async function saveSnapshot() {
             const path = currentPath || document.getElementById('projectPath').value;
@@ -519,9 +511,7 @@
             }
         }
 
-        // ============================================================
-        // ANALYSE AVEC GIT
-        // ============================================================
+        // Analyse avec Git
 
         async function runAnalysis() {
             const path = currentPath || document.getElementById('projectPath').value;
@@ -558,9 +548,7 @@
             }
         }
 
-        // ============================================================
-        // ANALYSE SANS GIT
-        // ============================================================
+        // Analyse sans Git
 
         async function runAnalysisNoGit() {
             const path = currentPath || document.getElementById('projectPath').value;
@@ -594,9 +582,7 @@
             }
         }
 
-        // ============================================================
-        // AFFICHAGE DES RÉSULTATS
-        // ============================================================
+        // Affichage des résultats
 
         function displayResults(data) {
             const summary = document.getElementById('summaryContainer');
@@ -692,9 +678,7 @@
             document.getElementById('reportBtn').classList.remove('hidden');
         }
 
-        // ============================================================
-        // RAPPORT HTML
-        // ============================================================
+        // Rapport HTML
 
         async function generateReport() {
             const path = currentPath || document.getElementById('projectPath').value;
@@ -740,9 +724,7 @@
             URL.revokeObjectURL(url);
         }
 
-        // ============================================================
-        // UTILITAIRES
-        // ============================================================
+        // Utilitaires
 
         function showError(msg) {
             const el = document.getElementById('errorMessage');

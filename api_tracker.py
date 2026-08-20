@@ -1,7 +1,3 @@
-"""
-api_tracker.py - Moteur d'analyse API Change Tracker
-"""
-
 import os
 import sys
 import ast
@@ -12,9 +8,7 @@ from typing import List, Dict, Any, Set
 from datetime import datetime
 from extractors import SUPPORTED_EXTENSIONS, extract_functions as extract_source_functions
 
-# ============================================================
-# GESTION DES ERREURS (sans UnicodeError)
-# ============================================================
+# Gestion des erreurs (sans UnicodeError)
 
 def error(msg: str):
     try:
@@ -40,9 +34,7 @@ def success(msg: str):
     except:
         print(f"[SUCCES] {msg}")
 
-# ============================================================
-# EXTRACTION DES FONCTIONS
-# ============================================================
+# Extraction des fonctions
 
 FUNC_TYPES = (ast.FunctionDef, ast.AsyncFunctionDef)
 
@@ -102,9 +94,7 @@ def compare_apis(v1: List[Dict], v2: List[Dict]) -> Dict:
                 })
     return changes
 
-# ============================================================
-# GIT
-# ============================================================
+# Git
 
 def git_cmd(repo: str, *args) -> str:
     try:
@@ -163,9 +153,7 @@ def read_local(repo: str, path: str) -> str:
     with open(full, 'r', encoding='utf-8') as f:
         return f.read()
 
-# ============================================================
-# TESTS IMPACTÉS
-# ============================================================
+# Tests impactés
 
 def find_impacted_tests(test_path: str, changed_funcs: List[str]) -> List[str]:
     impacted = set()
@@ -216,9 +204,7 @@ def find_test_dirs(repo: str) -> List[str]:
                 break
     return sorted(dirs)
 
-# ============================================================
-# DÉTECTION DES CHANGEMENTS
-# ============================================================
+# Détection des changements
 
 def detect_changes(repo: str, old_ref: str, new_ref: str, verbose: bool = False) -> Dict:
     changes = {'added': [], 'removed': [], 'modified': []}
@@ -244,9 +230,7 @@ def detect_changes(repo: str, old_ref: str, new_ref: str, verbose: bool = False)
         changes['modified'].extend(file_changes['modified'])
     return changes
 
-# ============================================================
-# RAPPORT HTML
-# ============================================================
+# Rapport HTML
 
 def generate_html_report(changes: Dict, impacted_tests: List[str], output_path: str = "report.html"):
     html = f"""
@@ -315,9 +299,7 @@ h1{{color:var(--primary);border-bottom:3px solid var(--primary);padding-bottom:1
         f.write(html)
     return output_path
 
-# ============================================================
-# MAIN
-# ============================================================
+# Main
 
 def main():
     parser = argparse.ArgumentParser(description="API Change Tracker")

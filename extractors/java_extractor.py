@@ -1,7 +1,3 @@
-"""
-extractors/java_extractor.py - Extracteur pour Java
-"""
-
 import hashlib
 from typing import List, Dict, Any
 from .base import BaseExtractor
@@ -98,7 +94,7 @@ class JavaExtractor(BaseExtractor):
                     })
                     
         except Exception as e:
-            print(f"⚠️ Erreur parsing Java: {e}")
+            print(f"Erreur parsing Java: {e}")
         
         return functions
 
